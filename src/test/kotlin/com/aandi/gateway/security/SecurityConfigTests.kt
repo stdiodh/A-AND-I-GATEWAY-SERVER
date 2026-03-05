@@ -210,6 +210,30 @@ class SecurityConfigTests(
     }
 
     @Test
+    fun `admin invite mail endpoint is forbidden for non admin role`() {
+        webTestClient.mutateWith(mockJwt().authorities(SimpleGrantedAuthority("ROLE_USER")))
+            .post()
+            .uri("/v1/admin/invite-mail")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"email":"new_member@aandi.club","role":"USER"}""")
+            .exchange()
+            .expectStatus()
+            .isForbidden
+    }
+
+    @Test
+    fun `legacy admin invite mail endpoint is forbidden for non admin role`() {
+        webTestClient.mutateWith(mockJwt().authorities(SimpleGrantedAuthority("ROLE_USER")))
+            .post()
+            .uri("/v2/auth/admin/invite-mail")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"email":"new_member@aandi.club","role":"USER"}""")
+            .exchange()
+            .expectStatus()
+            .isForbidden
+    }
+
+    @Test
     fun `posts list is public`() {
         webTestClient.get()
             .uri("/v1/posts")

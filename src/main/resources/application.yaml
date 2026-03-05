@@ -93,6 +93,11 @@ spring:
               predicates:
                 - Path=/v1/admin/users
                 - Method=POST
+            - id: auth-service-v1-admin-invite-mail-post
+              uri: ${AUTH_SERVICE_URI:http://localhost:9000}
+              predicates:
+                - Path=/v1/admin/invite-mail
+                - Method=POST
             - id: auth-service-v1-admin-users-role-patch
               uri: ${AUTH_SERVICE_URI:http://localhost:9000}
               predicates:
@@ -163,6 +168,13 @@ spring:
                 - Method=POST
               filters:
                 - SetPath=/v1/admin/users
+            - id: auth-service-admin-invite-mail-post
+              uri: ${AUTH_SERVICE_URI:http://localhost:9000}
+              predicates:
+                - Path=/v2/auth/admin/invite-mail
+                - Method=POST
+              filters:
+                - SetPath=/v1/admin/invite-mail
             - id: auth-service-admin-users-role-patch
               uri: ${AUTH_SERVICE_URI:http://localhost:9000}
               predicates:
