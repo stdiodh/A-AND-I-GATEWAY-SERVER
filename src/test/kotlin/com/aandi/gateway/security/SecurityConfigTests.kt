@@ -271,6 +271,33 @@ class SecurityConfigTests(
     }
 
     @Test
+    fun `v1 course admin enrollments endpoint is allowlisted and requires authentication`() {
+        webTestClient.get()
+            .uri("/v1/admin/courses/back-basic/enrollments")
+            .exchange()
+            .expectStatus()
+            .isUnauthorized
+    }
+
+    @Test
+    fun `v1 assignment to course query endpoint is allowlisted and requires authentication`() {
+        webTestClient.get()
+            .uri("/v1/courses/assignments/11111111-1111-1111-1111-111111111111/course")
+            .exchange()
+            .expectStatus()
+            .isUnauthorized
+    }
+
+    @Test
+    fun `legacy post assignment to course query endpoint remains allowlisted and requires authentication`() {
+        webTestClient.get()
+            .uri("/v2/post/courses/assignments/11111111-1111-1111-1111-111111111111/course")
+            .exchange()
+            .expectStatus()
+            .isUnauthorized
+    }
+
+    @Test
     fun `course admin endpoint is forbidden for non admin role`() {
         webTestClient.mutateWith(mockJwt().authorities(SimpleGrantedAuthority("ROLE_USER")))
             .post()
