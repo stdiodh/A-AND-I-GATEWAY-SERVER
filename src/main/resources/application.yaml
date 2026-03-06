@@ -257,10 +257,16 @@ spring:
               predicates:
                 - Path=/v1/posts/**
                 - Method=DELETE
-            - id: report-service-v1-admin-courses-root
+            - id: report-service-v1-admin-courses-root-get
               uri: ${REPORT_SERVICE_URI:http://localhost:8081}
               predicates:
                 - Path=/v1/admin/courses
+                - Method=GET
+            - id: report-service-v1-admin-courses-root-post
+              uri: ${REPORT_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/v1/admin/courses
+                - Method=POST
             - id: report-service-v1-admin-courses-subpaths
               uri: ${REPORT_SERVICE_URI:http://localhost:8081}
               predicates:

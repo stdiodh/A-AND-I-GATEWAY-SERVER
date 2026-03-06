@@ -52,6 +52,7 @@ class GatewayRequestPolicyFilter(
         AllowRule(HttpMethod.GET, parser.parse("/v1/posts/{postId}")),
         AllowRule(HttpMethod.PATCH, parser.parse("/v1/posts/{postId}")),
         AllowRule(HttpMethod.DELETE, parser.parse("/v1/posts/{postId}")),
+        AllowRule(HttpMethod.GET, parser.parse("/v1/admin/courses")),
         AllowRule(HttpMethod.POST, parser.parse("/v1/admin/courses")),
         AllowRule(HttpMethod.DELETE, parser.parse("/v1/admin/courses/{courseSlug}")),
         AllowRule(HttpMethod.PATCH, parser.parse("/v1/admin/courses/{courseSlug}")),
