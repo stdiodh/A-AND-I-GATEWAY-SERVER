@@ -12,19 +12,24 @@ import org.springframework.web.util.pattern.PathPattern
 import org.springframework.web.util.pattern.PathPatternParser
 import reactor.core.publisher.Mono
 import java.net.InetAddress
+import org.slf4j.LoggerFactory
 
 @Component
 class GatewayRequestPolicyFilter(
     private val policy: SecurityPolicyProperties
 ) : WebFilter, Ordered {
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private val parser = PathPatternParser.defaultInstance
 
     private val jsonContentTypeExemptions: List<PathPattern> = listOf(
         parser.parse("/v1/me"),
         parser.parse("/v1/posts"),
+        parser.parse("/v1/posts/{postId}"),
         parser.parse("/v1/posts/images"),
         parser.parse("/v2/post"),
+        parser.parse("/v2/post/{postId}"),
         parser.parse("/v2/post/images"),
         parser.parse("/v2/post/images/**")
     )
@@ -44,11 +49,23 @@ class GatewayRequestPolicyFilter(
         AllowRule(HttpMethod.POST, parser.parse("/v1/admin/users/sync")),
         AllowRule(HttpMethod.POST, parser.parse("/v1/admin/invite-mail")),
         AllowRule(HttpMethod.PATCH, parser.parse("/v1/admin/users/role")),
+        AllowRule(HttpMethod.PATCH, parser.parse("/v1/admin/users/**")),
         AllowRule(HttpMethod.POST, parser.parse("/v1/admin/users/{id}/reset-password")),
         AllowRule(HttpMethod.DELETE, parser.parse("/v1/admin/users")),
         AllowRule(HttpMethod.DELETE, parser.parse("/v1/admin/users/{id}")),
+        AllowRule(HttpMethod.GET, parser.parse("/v1/users")),
+        AllowRule(HttpMethod.GET, parser.parse("/v1/users/**")),
+        AllowRule(HttpMethod.POST, parser.parse("/v1/users")),
+        AllowRule(HttpMethod.POST, parser.parse("/v1/users/**")),
+        AllowRule(HttpMethod.PUT, parser.parse("/v1/users")),
+        AllowRule(HttpMethod.PUT, parser.parse("/v1/users/**")),
+        AllowRule(HttpMethod.PATCH, parser.parse("/v1/users")),
+        AllowRule(HttpMethod.PATCH, parser.parse("/v1/users/**")),
+        AllowRule(HttpMethod.DELETE, parser.parse("/v1/users")),
+        AllowRule(HttpMethod.DELETE, parser.parse("/v1/users/**")),
         AllowRule(HttpMethod.GET, parser.parse("/v1/posts")),
         AllowRule(HttpMethod.GET, parser.parse("/v1/posts/drafts")),
+        AllowRule(HttpMethod.GET, parser.parse("/v1/posts/drafts/**")),
         AllowRule(HttpMethod.POST, parser.parse("/v1/posts")),
         AllowRule(HttpMethod.GET, parser.parse("/v1/posts/{postId}")),
         AllowRule(HttpMethod.PATCH, parser.parse("/v1/posts/{postId}")),
@@ -78,6 +95,9 @@ class GatewayRequestPolicyFilter(
         AllowRule(HttpMethod.GET, parser.parse("/v1/courses/{courseSlug}/assignments/{assignmentId}/submissions/{submissionId}")),
         AllowRule(HttpMethod.GET, parser.parse("/v1/courses/{courseSlug}/assignments/{assignmentId}/submissions/{submissionId}/stream")),
         AllowRule(HttpMethod.GET, parser.parse("/v1/courses/assignments/{assignmentId}/course")),
+        AllowRule(HttpMethod.POST, parser.parse("/v1/submissions")),
+        AllowRule(HttpMethod.GET, parser.parse("/v1/submissions/{submissionId}")),
+        AllowRule(HttpMethod.GET, parser.parse("/v1/submissions/{submissionId}/stream")),
         AllowRule(HttpMethod.POST, parser.parse("/v1/posts/images")),
         AllowRule(HttpMethod.GET, parser.parse("/api/ping/**")),
         AllowRule(HttpMethod.GET, parser.parse("/")),
@@ -95,6 +115,8 @@ class GatewayRequestPolicyFilter(
         AllowRule(HttpMethod.GET, parser.parse("/v2/report/v3/api-docs/**")),
         AllowRule(HttpMethod.GET, parser.parse("/v2/auth/v3/api-docs")),
         AllowRule(HttpMethod.GET, parser.parse("/v2/auth/v3/api-docs/**")),
+        AllowRule(HttpMethod.GET, parser.parse("/v2/online-judge/v3/api-docs")),
+        AllowRule(HttpMethod.GET, parser.parse("/v2/online-judge/v3/api-docs/**")),
         AllowRule(HttpMethod.GET, parser.parse("/actuator/health")),
         AllowRule(HttpMethod.GET, parser.parse("/actuator/health/**")),
         AllowRule(HttpMethod.GET, parser.parse("/actuator/info")),
@@ -114,6 +136,7 @@ class GatewayRequestPolicyFilter(
         AllowRule(HttpMethod.DELETE, parser.parse("/v2/auth/admin/users/{id}")),
         AllowRule(HttpMethod.GET, parser.parse("/v2/post")),
         AllowRule(HttpMethod.GET, parser.parse("/v2/post/drafts")),
+        AllowRule(HttpMethod.GET, parser.parse("/v2/post/drafts/**")),
         AllowRule(HttpMethod.POST, parser.parse("/v2/post")),
         AllowRule(HttpMethod.GET, parser.parse("/v2/post/{postId}")),
         AllowRule(HttpMethod.PATCH, parser.parse("/v2/post/{postId}")),
@@ -144,11 +167,12 @@ class GatewayRequestPolicyFilter(
         AllowRule(HttpMethod.GET, parser.parse("/v2/post/courses/{courseSlug}/assignments/{assignmentId}/submissions/{submissionId}/stream")),
         AllowRule(HttpMethod.GET, parser.parse("/v2/post/courses/assignments/{assignmentId}/course")),
         AllowRule(HttpMethod.GET, parser.parse("/v1/report")),
+        AllowRule(HttpMethod.GET, parser.parse("/v1/report/**")),
         AllowRule(HttpMethod.POST, parser.parse("/v1/report")),
-        AllowRule(HttpMethod.GET, parser.parse("/v1/report/allReport")),
-        AllowRule(HttpMethod.GET, parser.parse("/v1/report/{id}")),
-        AllowRule(HttpMethod.PUT, parser.parse("/v1/report/{id}")),
-        AllowRule(HttpMethod.DELETE, parser.parse("/v1/report/{id}")),
+        AllowRule(HttpMethod.POST, parser.parse("/v1/report/**")),
+        AllowRule(HttpMethod.PUT, parser.parse("/v1/report/**")),
+        AllowRule(HttpMethod.PATCH, parser.parse("/v1/report/**")),
+        AllowRule(HttpMethod.DELETE, parser.parse("/v1/report/**")),
         AllowRule(HttpMethod.GET, parser.parse("/v2/report")),
         AllowRule(HttpMethod.POST, parser.parse("/v2/report")),
         AllowRule(HttpMethod.GET, parser.parse("/v2/report/allReport")),
@@ -169,6 +193,14 @@ class GatewayRequestPolicyFilter(
         }
 
         if (policy.enforceHttps && !isHttps(exchange)) {
+            log.warn(
+                "Rejecting request due to HTTPS policy: method={}, path={}, host={}, forwardedProto={}, remoteAddress={}",
+                request.method,
+                path.value(),
+                request.headers.host?.hostString,
+                request.headers.getFirst("X-Forwarded-Proto"),
+                request.remoteAddress?.address?.hostAddress
+            )
             return reject(exchange, HttpStatus.FORBIDDEN)
         }
 
@@ -177,6 +209,15 @@ class GatewayRequestPolicyFilter(
             val allowedHosts = policy.allowedHosts.map { it.lowercase() }.toSet()
             val hostAllowed = host in allowedHosts || (policy.allowPrivateIpHost && isPrivateIpHost(host))
             if (host.isBlank() || !hostAllowed) {
+                log.warn(
+                    "Rejecting request due to host policy: method={}, path={}, host={}, allowedHosts={}, allowPrivateIpHost={}, remoteAddress={}",
+                    request.method,
+                    path.value(),
+                    request.headers.host?.hostString,
+                    allowedHosts,
+                    policy.allowPrivateIpHost,
+                    request.remoteAddress?.address?.hostAddress
+                )
                 return reject(exchange, HttpStatus.FORBIDDEN)
             }
         }
