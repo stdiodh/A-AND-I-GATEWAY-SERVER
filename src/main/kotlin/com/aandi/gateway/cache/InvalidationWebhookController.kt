@@ -64,7 +64,7 @@ class InvalidationWebhookController(
         @RequestHeader("X-Internal-Token", required = false) token: String?,
         @RequestBody request: InvalidationEventRequest
     ): Mono<ResponseEntity<GatewayResponse<*>>> {
-        if (token != securityProperties.internalEventToken) {
+        if (!isValidInternalToken(token)) {
             return Mono.just(
                 ResponseEntity
                     .status(GatewayErrorCode.INTERNAL_TOKEN_INVALID.httpStatus)
@@ -77,6 +77,10 @@ class InvalidationWebhookController(
                     .status(HttpStatus.ACCEPTED)
                     .body(GatewayResponse.success(InvalidationEventResponse(invalidatedKeys)))
             }
+    }
+
+    private fun isValidInternalToken(token: String?): Boolean {
+        return token == securityProperties.internalEventToken
     }
 
     private fun invalidateByEvent(request: InvalidationEventRequest): Mono<Long> {
