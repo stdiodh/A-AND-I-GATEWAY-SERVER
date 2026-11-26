@@ -6,7 +6,7 @@
 | :-- | :-- |
 | 역할 | 요청 정책·JWT/Role 검사 후 각 서비스로 라우팅하고, `traceId`·`requestId`로 서비스 로그를 요청 단위로 연결 |
 | 담당 | Gateway 요청 정책과 보안 설정, 구조화 로그, Discord Monitor Bot 운영 조회, k6 부하 측정 |
-| 결과 | Mock Downstream 기준 Gateway 추가 지연 P95 `8.399 ms`, HTTP 실패율 `0.00%` |
+| 결과 | Mock Downstream 기준 Gateway 추가 지연과 HTTP 실패율 측정 (자세한 수치는 [k6 부하 테스트](#k6-부하-테스트)의 표) |
 
 ## A&I 서비스 전체 구조
 
