@@ -1124,6 +1124,20 @@ class SecurityConfigTests(
     }
 
     @Test
+    fun `internal invalidation endpoint is forbidden with wrong internal token`() {
+        webTestClient.post()
+            .uri("/internal/v1/cache/invalidation")
+            .header("X-Internal-Token", "wrong-internal-token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""{"eventType":"LOGOUT","subject":"user-1"}""")
+            .exchange()
+            .expectStatus()
+            .isForbidden
+            .expectBody()
+            .jsonPath("$.error.value").isEqualTo("INTERNAL_TOKEN_INVALID")
+    }
+
+    @Test
     fun `internal invalidation endpoint accepts valid internal token`() {
         webTestClient.post()
             .uri("/internal/v1/cache/invalidation")

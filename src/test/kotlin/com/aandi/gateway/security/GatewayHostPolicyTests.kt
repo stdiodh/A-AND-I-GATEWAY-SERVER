@@ -65,6 +65,14 @@ class GatewayHostPolicyTests {
     }
 
     @Test
+    fun `blank host is rejected when host allowlist is configured`() {
+        val result = evaluateHost("")
+
+        assertFalse(result.chainInvoked)
+        assertEquals(HttpStatus.FORBIDDEN, result.status)
+    }
+
+    @Test
     fun `empty configured host allowlist bypasses host validation`() {
         val result = evaluateHost(host = "unlisted.example", allowedHosts = emptySet())
 
