@@ -507,6 +507,108 @@ class ApiLoggingContractTests {
         assertEquals("****", nested["Authorization"])
     }
 
+    @Test
+    fun `keys containing sensitive terms are masked regardless of case or separator`() {
+        val sensitiveKeys = listOf(
+            "currentPassword",
+            "newPassword",
+            "temporaryPassword",
+            "new_password",
+            "access_token",
+            "refresh_token",
+            "idToken",
+            "X-Auth-Token",
+            "clientSecret",
+            "client_secret",
+            "proxyAuthorization",
+            "passwordSalt"
+        )
+        val masked = MaskingUtil.maskObject(
+            mapOf(
+                "items" to listOf(sensitiveKeys.associateWith { "$it-raw" })
+            )
+        ) as Map<*, *>
+
+        val item = (masked["items"] as List<*>).single() as Map<*, *>
+        sensitiveKeys.forEach { key -> assertEquals("****", item[key], "key=$key") }
+    }
+
+    @Test
+    fun `previously masked keys stay masked in any case`() {
+        val previouslyMaskedKeys = listOf(
+            "password",
+            "passwordconfirm",
+            "accesstoken",
+            "refreshtoken",
+            "authorization",
+            "authenticate",
+            "token",
+            "salt",
+            "secret"
+        )
+
+        previouslyMaskedKeys.flatMap { listOf(it, it.uppercase(), " $it ") }.forEach { key ->
+            assertEquals("****", MaskingUtil.maskByKey(key, "raw-value"), "key=$key")
+        }
+    }
+
+    @Test
+    fun `non sensitive keys are not fully masked`() {
+        val masked = MaskingUtil.maskObject(
+            mapOf(
+                "username" to "student01",
+                "loginId" to "member01",
+                "title" to "assignment title",
+                "content" to "assignment content",
+                "courseSlug" to "kotlin-basic",
+                "id" to 1001
+            )
+        ) as Map<*, *>
+
+        assertEquals("stu******", masked["username"])
+        assertEquals("mem*****", masked["loginId"])
+        assertEquals("assignment title", masked["title"])
+        assertEquals("assignment content", masked["content"])
+        assertEquals("kotlin-basic", masked["courseSlug"])
+        assertEquals(1001, masked["id"])
+    }
+
+    @Test
+    fun `password change request body is masked in api log`() {
+        val currentPassword = "current-password-raw-1234"
+        val newPassword = "new-password-raw-1234"
+        val requestBody = """{"currentPassword":"$currentPassword","newPassword":"$newPassword"}"""
+        val exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.post("/v1/me/password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(requestBody)
+        )
+        val context = ApiLogContext.initialize(exchange)
+        context.requestBody = requestBody
+
+        val loggedBody = factory.create(exchange, context, null).request.body as Map<*, *>
+
+        assertEquals("****", loggedBody["currentPassword"])
+        assertEquals("****", loggedBody["newPassword"])
+        assertFalse(loggedBody.toString().contains(currentPassword))
+        assertFalse(loggedBody.toString().contains(newPassword))
+    }
+
+    @Test
+    fun `sensitive query parameters with separators are masked in api log`() {
+        val refreshToken = "refresh-token-raw"
+        val exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.get("/v2/test")
+                .queryParam("refresh_token", refreshToken)
+                .queryParam("page", "1")
+        )
+
+        val query = factory.create(exchange, ApiLogContext.initialize(exchange), null).request.query
+
+        assertEquals("****", query["refresh_token"])
+        assertEquals("1", query["page"])
+    }
+
     private fun exchange(path: String): MockServerWebExchange {
         return MockServerWebExchange.from(MockServerHttpRequest.get(path).build())
     }

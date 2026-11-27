@@ -4,16 +4,15 @@ import org.springframework.http.HttpHeaders
 import org.springframework.util.MultiValueMap
 
 object MaskingUtil {
-    private val fullMaskKeys = setOf(
+    // 키 이름에 아래 용어가 포함되면 전체 마스킹한다 (예: currentPassword, refresh_token, clientSecret).
+    // passwordconfirm, accesstoken, refreshtoken처럼 기존 정확 일치로 다루던 키도 모두 포함된다.
+    private val sensitiveKeyTerms = listOf(
         "password",
-        "passwordconfirm",
-        "accesstoken",
-        "refreshtoken",
+        "token",
+        "secret",
         "authorization",
         "authenticate",
-        "token",
-        "salt",
-        "secret"
+        "salt"
     )
     private val partialMaskKeys = setOf("loginid", "username")
 
@@ -44,10 +43,14 @@ object MaskingUtil {
     fun maskByKey(key: String?, value: Any?): Any? {
         val normalized = key?.trim().orEmpty().lowercase()
         return when {
-            normalized in fullMaskKeys -> FULL_MASK
+            isSensitiveKey(normalized) -> FULL_MASK
             normalized in partialMaskKeys -> partialMask(value?.toString())
             else -> maskObject(value)
         }
+    }
+
+    private fun isSensitiveKey(normalizedKey: String): Boolean {
+        return sensitiveKeyTerms.any { term -> normalizedKey.contains(term) }
     }
 
     fun partialMask(value: String?): String? {
