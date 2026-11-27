@@ -64,7 +64,7 @@ sequenceDiagram
             Gateway-->>Client: 공통 응답 반환
         end
     end
-````
+```
 
 허용되지 않은 요청은 downstream까지 전달하지 않고 Gateway에서 종료합니다.
 
