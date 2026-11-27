@@ -2,17 +2,17 @@
 
 > Auth, Assignment & Report, Blog, Online Judge로 나뉜 A&I 백엔드의 공통 진입점입니다.
 
-클라이언트 요청을 하나의 Gateway로 받아 공통 정책과 권한을 검사한 뒤 각 서비스로 전달합니다.
-
-요청과 응답에는 `traceId`와 `requestId`를 남겨 서비스와 로그를 하나의 요청 단위로 추적할 수 있도록 구성했습니다.
+| 항목 | 내용 |
+| :-- | :-- |
+| 역할 | 요청 정책·JWT/Role 검사 후 각 서비스로 라우팅하고, `traceId`·`requestId`로 서비스 로그를 요청 단위로 연결 |
+| 담당 | Gateway 요청 정책과 보안 설정, 구조화 로그, Discord Monitor Bot 운영 조회, k6 부하 측정 |
+| 결과 | Mock Downstream 기준 Gateway 추가 지연과 HTTP 실패율 측정 (자세한 수치는 [k6 부하 테스트](#k6-부하-테스트)의 표) |
 
 ## A&I 서비스 전체 구조
 
 <img width="1672" height="941" alt="b37722eb-4397-4e51-8168-9162b63ee5e7" src="https://github.com/user-attachments/assets/438b56e5-4174-40d4-9a3b-dd7e66fcab7f" />
 
-외부 요청은 Nginx와 Gateway를 거쳐 각 서비스로 전달됩니다.
-
-과제와 채점 데이터는 서비스 간 직접 호출 대신 SNS/SQS 이벤트로 동기화합니다.
+외부 요청은 Nginx와 Gateway를 거쳐 각 서비스로 전달됩니다. 과제와 채점 데이터는 서비스 간 직접 호출 대신 SNS/SQS 이벤트로 동기화합니다.
 
 ## Gateway와 운영 조회 구조
 
@@ -29,9 +29,7 @@ Gateway는 다음 공통 기능을 담당합니다.
 - 인증 요청 Rate Limit
 - Redis token context cache
 
-Discord Monitor Bot은 Gateway JVM과 분리된 Go sidecar입니다.
-
-CloudWatch Logs와 WEB Admin GET API를 읽기 전용으로 조회하며 서비스 데이터를 직접 변경하지 않습니다.
+Discord Monitor Bot은 Gateway JVM과 분리된 Go sidecar로, CloudWatch Logs와 WEB Admin GET API를 읽기 전용으로 조회합니다.
 
 ## 요청 처리 흐름
 
@@ -91,13 +89,7 @@ sequenceDiagram
     Bot-->>Operator: 확인에 필요한 결과 요약
 ```
 
-운영자는 다음 명령으로 서비스 상태와 로그를 확인할 수 있습니다.
-
-* `/ops dashboard`
-* `/ops logs`
-* `/ops alert`
-* `/ops assignment`
-* `/ops help`
+운영자 명령: `/ops dashboard` · `/ops logs` · `/ops alert` · `/ops assignment` · `/ops help`
 
 ![Discord Alert Example](./docs/assets/images/discord-critical-alert.png)
 
@@ -117,9 +109,7 @@ sequenceDiagram
 | HTTP 실패율      |     `0.00%` |
 | Check 성공률     |   `100.00%` |
 
-해당 결과는 Gateway의 정책·라우팅·로깅 계층에 대한 **로컬 회귀 테스트 기준**이며 운영 환경의 최대 처리량을 의미하지 않습니다.
-
-자세한 측정 조건은 [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md)에서 확인할 수 있습니다.
+Gateway 정책·라우팅·로깅 계층의 **로컬 회귀 테스트 기준**이며 운영 최대 처리량이 아닙니다. 측정 조건은 [`docs/PERFORMANCE.md`](./docs/PERFORMANCE.md)에 있습니다.
 
 ## 테스트
 
