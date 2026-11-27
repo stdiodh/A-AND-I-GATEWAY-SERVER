@@ -253,9 +253,7 @@ class GatewayRequestPolicyFilter(
 
         if (normalizedAllowedHosts.isNotEmpty()) {
             val host = request.headers.host?.hostString?.lowercase().orEmpty()
-            val hostAllowed = host in normalizedAllowedHosts ||
-                (policy.allowPrivateIpHost && isLoopbackOrSiteLocalIpLiteral(host))
-            if (host.isBlank() || !hostAllowed) {
+            if (!isAllowedHost(host)) {
                 log.warn(
                     "Rejecting request due to host policy: method={}, path={}, host={}, allowedHosts={}, allowPrivateIpHost={}, remoteAddress={}",
                     request.method,
@@ -296,11 +294,28 @@ class GatewayRequestPolicyFilter(
             }
         }
 
-        if (policy.enforceJsonContentType && requiresJsonContentType(request.method) && !isJsonRequest(request, path)) {
+        if (violatesJsonContentTypePolicy(request, path)) {
             return reject(exchange, GatewayErrorCode.JSON_CONTENT_TYPE_REQUIRED)
         }
 
         return chain.filter(exchange)
+    }
+
+    private fun isAllowedHost(host: String): Boolean {
+        if (host.isBlank()) {
+            return false
+        }
+        return host in normalizedAllowedHosts ||
+            (policy.allowPrivateIpHost && isLoopbackOrSiteLocalIpLiteral(host))
+    }
+
+    private fun violatesJsonContentTypePolicy(
+        request: org.springframework.http.server.reactive.ServerHttpRequest,
+        path: org.springframework.http.server.PathContainer
+    ): Boolean {
+        return policy.enforceJsonContentType &&
+            requiresJsonContentType(request.method) &&
+            !isJsonRequest(request, path)
     }
 
     private fun isHttps(exchange: ServerWebExchange): Boolean {

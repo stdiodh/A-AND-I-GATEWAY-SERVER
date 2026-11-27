@@ -33,9 +33,9 @@ class ApiLogFactory(
         }
         val message = when {
             success -> SUCCESS_MESSAGE
-            !context.failureMessage.isNullOrBlank() -> context.failureMessage!!
-            response.error != null -> response.error.message
-            else -> FAILURE_MESSAGE
+            else -> context.failureMessage?.takeIf { it.isNotBlank() }
+                ?: response.error?.message
+                ?: FAILURE_MESSAGE
         }
 
         return ApiStructuredLog(

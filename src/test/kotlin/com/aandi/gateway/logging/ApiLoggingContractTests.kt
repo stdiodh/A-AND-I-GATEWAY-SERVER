@@ -609,15 +609,35 @@ class ApiLoggingContractTests {
         assertEquals("1", query["page"])
     }
 
+    @Test
+    fun `api log message prefers failure message then response error message`() {
+        val errorBody = """{"success":false,"data":null,"error":{"code":44501,"message":"downstream error message"}}"""
+
+        val withFailureMessage = logForResponse(HttpStatus.CONFLICT, errorBody) { it.failureMessage = "explicit failure" }
+        val withBlankFailureMessage = logForResponse(HttpStatus.CONFLICT, errorBody) { it.failureMessage = "  " }
+        val withoutFailureMessage = logForResponse(HttpStatus.CONFLICT, errorBody)
+        val success = logForResponse(HttpStatus.OK, """{"success":true,"data":{}}""") { it.failureMessage = "ignored" }
+
+        assertEquals("explicit failure", withFailureMessage.message)
+        assertEquals("downstream error message", withBlankFailureMessage.message)
+        assertEquals("downstream error message", withoutFailureMessage.message)
+        assertEquals("HTTP request completed", success.message)
+    }
+
     private fun exchange(path: String): MockServerWebExchange {
         return MockServerWebExchange.from(MockServerHttpRequest.get(path).build())
     }
 
-    private fun logForResponse(status: HttpStatus, body: String = ""): ApiStructuredLog {
+    private fun logForResponse(
+        status: HttpStatus,
+        body: String = "",
+        configure: (ApiLogContext) -> Unit = {}
+    ): ApiStructuredLog {
         val exchange = exchange("/v2/test")
         exchange.response.statusCode = status
         val context = ApiLogContext.initialize(exchange)
         context.responseBody = body
+        configure(context)
         return factory.create(exchange, context, null)
     }
 
