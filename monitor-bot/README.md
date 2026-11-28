@@ -2,14 +2,14 @@
 
 Go 기반 Discord HTTP Interactions sidecar입니다. Gateway JVM 프로세스와 분리된 컨테이너로 실행되며, Discord Gateway WebSocket을 열지 않고 nginx가 `/discord/interactions`만 프록시합니다.
 
-## Purpose
+## 만든 이유와 설계
 
-monitor-bot은 운영자가 Discord에서 서비스 상태, 로그, 과제 상태, 과제 audit 이벤트를 확인하기 위한 read-only 운영 도구입니다.
+운영자가 AWS 콘솔에 들어가지 않고 Discord에서 서비스 상태, 로그, 과제 상태, 과제 변경 이력을 확인하도록 만든 읽기 전용 운영 도구입니다.
 
-- CloudWatch Logs와 WEB Admin GET API를 조회합니다.
-- 과제 생성/수정/삭제/공개/비공개 명령을 제공하지 않습니다.
-- Report Admin POST/PATCH/DELETE API를 호출하지 않습니다.
-- token, request body, full response data, secret 값은 Discord 응답이나 로그에 노출하지 않습니다.
+- **상시 연결 없이 동작합니다.** Discord Gateway WebSocket 대신 HTTP Interactions를 써서, nginx가 한 경로만 프록시하고 Gateway JVM과 별도 컨테이너로 배포합니다.
+- **조회만 합니다.** CloudWatch Logs와 WEB Admin GET API만 호출하고, 과제 생성·수정·삭제·공개 명령이나 Report Admin 쓰기 API는 제공하지 않습니다.
+- **알림이 반복되지 않습니다.** 첫 조회는 기준선만 저장하고, 같은 장애는 incident key로 묶으며, 상태가 의미 있게 바뀔 때만 다시 보냅니다.
+- **민감 정보를 남기지 않습니다.** token, request body, 응답 원문, secret 값은 Discord 응답과 로그에 노출하지 않습니다.
 
 ## UX Contract
 
